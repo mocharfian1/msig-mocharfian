@@ -1,0 +1,313 @@
+<html xmlns:th="http://www.w3.org/1999/xhtml" xmlns:v-slot="http://www.w3.org/1999/XSL/Transform">
+<!doctype html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@3.x/css/materialdesignicons.min.css"/>
+</head>
+
+<body>
+<div id="app">
+    <v-app>
+        <v-main>
+            <v-app-bar fixed color="white" height="64">
+                <v-toolbar-title>Contact App</v-toolbar-title>
+                <v-spacer></v-spacer>
+                <v-btn icon @click="buildSearchItem"> <v-icon>mdi-magnify</v-icon> </v-btn>
+                <v-btn icon @click="getListAllContact"> <v-icon>mdi-refresh</v-icon> </v-btn>
+            </v-app-bar>
+            <v-container style="margin-top: 70px">
+                <v-card class="overflow-hidden">
+                    <v-container>
+                        <v-row>
+                            <v-col v-for="item in itemContact" :key="item.id" cols="12">
+                                <v-card class="mx-auto" outlined @click="updateContact(item.id)">
+                                    <v-list-item two-line>
+                                        <v-list-item-avatar
+                                                size="80"
+                                                color="grey"
+                                        >
+                                            <span class="white--text text-h5">{{ item.name[0] }}</span>
+                                        </v-list-item-avatar>
+                                        <v-list-item-content>
+                                            <v-list-item-title class="text-h5">
+                                                {{ item.name }}
+                                            </v-list-item-title>
+                                            <v-list-item-subtitle class="text-h5">
+                                                {{ item.phone }}
+                                            </v-list-item-subtitle>
+                                        </v-list-item-content>
+                                    </v-list-item>
+                                </v-card>
+                            </v-col>
+                        </v-row>
+                    </v-container>
+                </v-card>
+            </v-container>
+            <v-fab-transition>
+                <v-btn
+                        color="pink"
+                        dark
+                        fixed
+                        bottom
+                        right
+                        fab
+                        @click="createContactDialogOpen"
+                >
+                    <v-icon>mdi-plus</v-icon>
+                </v-btn>
+            </v-fab-transition>
+        </v-main>
+
+        <div>
+            <v-row justify="center">
+                <v-dialog v-model="dialogAddUpdate" persistent max-width="600px" >
+                    <v-card>
+                        <v-card-title>
+                            <span class="text-h5">Add Contact</span>
+                        </v-card-title>
+                        <v-card-text>
+                            <v-container>
+                                <v-row>
+                                    <v-col cols="6">
+                                        <v-text-field
+                                                v-model="frmContact.name"
+                                                label="Name"
+                                                required
+                                        ></v-text-field>
+                                    </v-col>
+                                    <v-col cols="6">
+                                        <v-text-field
+                                                v-model="frmContact.phone"
+                                                label="Phone"
+                                                type="number"
+                                                hint="Nomor Telpon Rumah / Mobile"
+                                        ></v-text-field>
+                                    </v-col>
+                                    <v-col cols="6">
+                                        <v-text-field
+                                                v-model="frmContact.mobile"
+                                                label="Mobile"
+                                                type="number"
+                                                hint="Nomor Handphone"
+                                                required
+                                        ></v-text-field>
+                                    </v-col>
+                                    <v-col cols="6">
+                                        <v-text-field
+                                                v-model="frmContact.email"
+                                                type="email"
+                                                label="Email"
+                                                required
+                                        ></v-text-field>
+                                    </v-col>
+                                </v-row>
+                            </v-container>
+                        </v-card-text>
+                        <v-card-actions>
+                            <v-btn
+                                    :loading="loadingDelete"
+                                    v-show="deleteButton"
+                                    color="red darken-1"
+                                    text
+                                    @click="deleteContact"
+                            >
+                                <v-icon>mdi-delete</v-icon>Delete
+                            </v-btn>
+                            <v-spacer></v-spacer>
+                            <v-btn
+                                    color="grey darken-1"
+                                    text
+                                    @click="dialogAddUpdate = false"
+                            >
+                                Close
+                            </v-btn>
+                            <v-btn
+                                    :loading="loadingSave"
+                                    color="blue darken-1"
+                                    text
+                                    @click="createContact"
+                            >
+                                <v-icon>mdi-content-save</v-icon>Save
+                            </v-btn>
+                        </v-card-actions>
+                    </v-card>
+                </v-dialog>
+            </v-row>
+        </div>
+
+        <div class="text-center ma-2">
+            <v-snackbar
+                    v-model="snackbarResponse"
+            >
+                {{ snackbarMessage }}
+
+                <template v-slot:action="{ attrs }">
+                    <v-btn
+                            color="pink"
+                            text
+                            v-bind="attrs"
+                            @click="snackbarResponse = false"
+                    >
+                        Close
+                    </v-btn>
+                </template>
+            </v-snackbar>
+        </div>
+
+        <div>
+            <v-dialog
+                    v-model="dialogSearch"
+                    max-width="290"
+            >
+                <v-card class="pt-3">
+                    <v-card-text>
+                        <v-text-field
+                                autofocus
+                                v-model="searchText"
+                                append-icon="mdi-magnify"
+                                label="Search"
+                                hint="Cari berdasarkan nama / nomor"
+                                @keydown="searchContact"
+                        ></v-text-field>
+                    </v-card-text>
+                </v-card>
+            </v-dialog>
+        </div>
+    </v-app>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+</body>
+<script>
+    new Vue({
+        el: '#app',
+        vuetify: new Vuetify(),
+        data: () => ({
+            dialogAddUpdate: false,
+            dialogSearch: false,
+
+            snackbarResponse: false,
+            snackbarMessage: '',
+
+            deleteButton: false,
+
+            loadingSave: false,
+            loadingDelete: false,
+
+            tmpItems: [],
+
+            itemContact: [],
+            frmContact: {
+                name: null,
+                phone: null,
+                mobile: null,
+                email: null
+            },
+
+            searchText: null
+        }),
+        mounted(){
+            this.getListAllContact()
+        },
+        methods:{
+            createContactDialogOpen(){
+                this.dialogAddUpdate = true;
+                this.deleteButton = false
+                this.frmContact = {
+                    id: null,
+                    name: null,
+                    phone: null,
+                    mobile: null,
+                    email: null
+                }
+            },
+            getListAllContact(){
+                axios.get("api/contact").then(res => {
+                    this.itemContact = res.data.data
+                })
+            },
+            createContact(){
+                this.loadingSave = true
+                let putPost = this.frmContact.id !== null ? 'put':'post';
+
+                axios[putPost]("api/contact", this.frmContact).then(res => {
+                    this.loadingSave = false
+
+                    if(res.data.statusCode === 200){
+                        this.dialogAddUpdate = false
+                        this.frmContact = {
+                            id: null,
+                            name: null,
+                            phone: null,
+                            mobile: null,
+                            email: null
+                        }
+                    }
+
+                    this.snackbarResponse = true;
+                    this.snackbarMessage = res.data.statusMessage
+                    this.getListAllContact()
+                }).catch(err => {
+                    this.loadingSave = false
+                    this.snackbarResponse = true;
+                    this.snackbarMessage = err.response.data.statusMessage
+                })
+            },
+            updateContact(id){
+                this.frmContact = this.itemContact.find(item => item.id === id)
+                this.dialogAddUpdate = true;
+                this.deleteButton = true;
+            },
+            deleteContact(){
+                this.loadingDelete = true
+
+                axios.delete("api/contact/" + this.frmContact.id).then(res => {
+                    this.loadingDelete = false
+
+                    if(res.data.statusCode === 200){
+                        this.dialogAddUpdate = false
+                        this.frmContact = {
+                            id: null,
+                            name: null,
+                            phone: null,
+                            mobile: null,
+                            email: null
+                        }
+                    }
+
+                    this.snackbarResponse = true;
+                    this.snackbarMessage = res.data.statusMessage
+                    this.getListAllContact()
+                }).catch(err => {
+                    this.loadingDelete = false
+                    this.snackbarResponse = true;
+                    this.snackbarMessage = err.response.data.statusMessage
+                })
+            },
+            buildSearchItem(){
+                this.dialogSearch = true
+                this.tmpItems = this.itemContact
+            },
+            searchContact(e){
+                setTimeout(()=>{
+                    if (e.key === 'Enter' || e.keyCode === 13) {
+                        this.dialogSearch = false
+                    }
+                    let itemSearch = [...this.tmpItems];
+                    this.itemContact = itemSearch.filter(itm => itm.name.toLowerCase().match(this.searchText.toLowerCase()))
+                }, 10)
+            }
+        }
+    })
+</script>
+
+<script>
+</script>
+
+</html>
